@@ -20,7 +20,15 @@ npm run dev                # http://localhost:3000
 
 The database must exist before you migrate; the migration creates tables, not
 the database. On a local server that is `createdb waitwise`. On Neon, Supabase
-or RDS, create it in their console and set `DATABASE_SSL=true`.
+or RDS, create it in their console.
+
+**TLS.** If the connection string already carries `sslmode` — as Neon's and
+Supabase's do — leave `DATABASE_SSL` unset. The driver reads `sslmode` itself and
+verifies the certificate. Setting `DATABASE_SSL=true` maps to
+`rejectUnauthorized: false`, which *downgrades* a verified connection to an
+unverified one. Set it only for a host that requires TLS but presents a
+certificate the driver cannot verify, such as a self-signed one, and understand
+that it disables verification.
 
 `db:migrate` applies every `db/migrations/*.sql` not yet recorded, each in its
 own transaction, and records it in `schema_migrations`. It is safe to re-run —
@@ -38,8 +46,9 @@ npm start
 ```
 
 The page is `force-dynamic` and queries Postgres per request, so it needs a Node
-runtime, not static hosting. Set `DATABASE_URL` (and `DATABASE_SSL=true` if the
-provider requires TLS) in the host's environment; nothing else is configured.
+runtime, not static hosting. Set `DATABASE_URL` in the host's environment — see
+the TLS note above before reaching for `DATABASE_SSL`; nothing else is
+configured.
 The connection pool is created lazily and reused, so it survives across
 requests.
 

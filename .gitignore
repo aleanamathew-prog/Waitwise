@@ -12,6 +12,3 @@ data/*.zip
 
 # Cached ODS API responses.
 data/.ods-cache.json
-
-# Throwaway analysis scripts from data validation, kept locally only.
-tmp-analysis/

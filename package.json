@@ -11,11 +11,13 @@
     "inspect": "node --env-file-if-exists=.env scripts/inspect-xlsx.ts",
     "load": "node --env-file-if-exists=.env scripts/load-waits.ts",
     "load:providers": "node --env-file-if-exists=.env scripts/load-providers.ts",
+    "validate": "node --env-file-if-exists=.env scripts/validate.ts",
     "test:schema": "node scripts/test-schema.ts",
     "test:load": "node scripts/test-load.ts",
     "test:ods": "node scripts/test-ods.ts",
     "test:search": "node scripts/test-search.ts",
-    "test": "npm run test:schema && npm run test:load && npm run test:ods && npm run test:search"
+    "test:csv": "node scripts/test-csv.ts",
+    "test": "npm run test:schema && npm run test:load && npm run test:ods && npm run test:search && npm run test:csv"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

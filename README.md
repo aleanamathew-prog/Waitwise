@@ -150,6 +150,33 @@ it, so provider names match the waiting-time data.
 | `--concurrency n` | Simultaneous ORD requests (default 6). |
 | `--limit n` | Stop after n providers, for a trial run. |
 
+## Validating a month against the full extract
+
+NHS England also publishes a full CSV extract of the same month, split by
+commissioner. Reconciling the two catches a parsing regression before the
+figures reach anyone.
+
+```bash
+npm run validate -- --file data/Incomplete-Provider-Jun26-...xlsx \
+                    --csv data/20260630-RTT-June-2026-full-extract.csv
+```
+
+It exits non-zero if anything fails to reconcile, so it can gate a monthly load.
+
+The two publications do not agree line for line by design: the provider workbook
+excludes the `NONC` commissioner (patients commissioned outside England) and the
+extract includes it, so those rows are removed from the CSV side first. On the
+June 2026 release that alone accounts for all 113 providers that otherwise
+differ, and the remaining 537 then match exactly, to a grand total of 7,147,562
+patients.
+
+It also checks that both files are for the same month, since pairing the wrong
+two produces hundreds of mismatches that look like a parsing bug. Two details in
+the extract are easy to get wrong and are handled here: the `Total` column is
+empty on incomplete-pathway rows (`Total All` carries the figure), and fields
+are quoted because commissioner names contain commas, so it cannot be split
+naively.
+
 ## Schema
 
 `providers` — one row per organisation, keyed on `ods_code`. The RTT workbook
@@ -167,7 +194,9 @@ duplicating.
 npm test
 ```
 
-`test:ods` checks the ODS response handling against recorded payloads, with no
+`test:csv` checks the CSV reader against quoted commas, doubled quotes and
+chunk boundaries — the shapes that silently misalign columns. `test:ods` checks
+the ODS response handling against recorded payloads, with no
 network. `test:schema` applies the migrations to an in-process Postgres (PGlite) and
 checks the constraints. `test:load` builds a workbook shaped like the real
 release — a cover sheet, a caption row above a single header row, a second

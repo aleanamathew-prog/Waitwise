@@ -1,0 +1,17 @@
+node_modules/
+.DS_Store
+.next/
+.env
+*.tsbuildinfo
+next-env.d.ts
+
+# NHS releases are large and republished; keep them out of git.
+data/*.xlsx
+data/*.csv
+data/*.zip
+
+# Cached ODS API responses.
+data/.ods-cache.json
+
+# Throwaway analysis scripts from data validation, kept locally only.
+tmp-analysis/

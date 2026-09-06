@@ -1,0 +1,308 @@
+import {
+  listSpecialties,
+  listPeriods,
+  findProviders,
+  groupByTie,
+  ACTIVITY_WINDOW_MONTHS,
+  RADII,
+  TIE_TOLERANCE_WEEKS,
+} from '../lib/search.ts';
+import type { ProviderWait, Radius, TieGroup } from '../lib/search.ts';
+import { lookupPostcode } from '../lib/postcode.ts';
+import type { PostcodeLookup } from '../lib/postcode.ts';
+import { formatCount, formatMiles, formatPercent, formatPeriod, formatWeeks } from '../lib/format.ts';
+
+export const dynamic = 'force-dynamic';
+
+type Params = Record<string, string | string[] | undefined>;
+
+/** A repeated query parameter (?postcode=a&postcode=b) arrives as an array. */
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+const FAILURE_TEXT: Record<Exclude<PostcodeLookup, { ok: true }>['reason'], [string, string]> = {
+  invalid: [
+    'That does not look like a UK postcode.',
+    'Enter a full postcode, such as LS1 4AP.',
+  ],
+  'not-found': [
+    'No such postcode.',
+    'Check the postcode and try again. Results are for hospitals in England.',
+  ],
+  unavailable: [
+    'The postcode lookup is not responding, so we cannot work out distances.',
+    'Nothing is wrong with your postcode — try again in a moment.',
+  ],
+};
+
+/** Bars share one scale so a short wait reads as short, not just as first. */
+function measureScale(groups: TieGroup[]): number {
+  const longest = Math.max(
+    0,
+    ...groups.flatMap((group) =>
+      group.kind === 'ranked' ? group.rows.map((row) => row.medianWaitWeeks ?? 0) : [],
+    ),
+  );
+  return Math.max(longest, 12);
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
+function bandLabel(group: Extract<TieGroup, { kind: 'ranked' }>): string {
+  if (group.rows.length === 1) return `${formatWeeks(group.minWeeks)} weeks`;
+  return `${formatWeeks(group.minWeeks)}–${formatWeeks(group.maxWeeks)} weeks`;
+}
+
+function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number }) {
+  const { medianWaitWeeks: weeks } = provider;
+  // With nobody waiting there is no percentage and no queue to state; "0%" and
+  // "0" would read as a terrible service rather than an absent one.
+  const nothingWaiting = provider.patientsWaiting === 0;
+  return (
+    <tr className={nothingWaiting ? 'row-quiet' : undefined}>
+      <td>
+        <span className="provider-name">{provider.name}</span>
+        <span className="vintage">
+          data to {formatPeriod(provider.periodEnd)}
+          {provider.postcode ? ` · ${provider.postcode}` : ''}
+        </span>
+      </td>
+      <td className="num" data-label="Distance">{formatMiles(provider.distanceMiles)}</td>
+      <td data-label="Median wait">
+        <div className="wait">
+          {weeks === null ? (
+            <span className={nothingWaiting ? 'wait-empty' : 'wait-unreported'}>
+              {nothingWaiting ? 'no one waiting' : 'not published'}
+            </span>
+          ) : (
+            <>
+              <span className="wait-figure">
+                {formatWeeks(weeks)}
+                <span className="unit">weeks</span>
+              </span>
+              <span className="measure" aria-hidden="true">
+                <span style={{ width: `${Math.min(100, (weeks / scale) * 100)}%` }} />
+              </span>
+            </>
+          )}
+        </div>
+      </td>
+      <td className="num" data-label="Seen within 18 weeks">
+        {nothingWaiting || provider.pctWithin18Weeks === null ? (
+          <span className="muted" aria-label="not applicable">&mdash;</span>
+        ) : (
+          formatPercent(provider.pctWithin18Weeks)
+        )}
+      </td>
+      <td className="num" data-label="Patients waiting">
+        {nothingWaiting || provider.patientsWaiting === null ? (
+          <span className="muted" aria-label="not applicable">&mdash;</span>
+        ) : (
+          formatCount(provider.patientsWaiting)
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function ResultTable({
+  rows,
+  scale,
+  showHeader,
+}: {
+  rows: ProviderWait[];
+  scale: number;
+  showHeader: boolean;
+}) {
+  return (
+    // Every group is its own table, so the columns are pinned to the same
+    // widths; otherwise each group would size its own columns and nothing would
+    // line up down the page. Later groups keep the header for screen readers
+    // but hide it, since repeating it under every band is just noise.
+    <table className={showHeader ? undefined : 'headerless'}>
+      <colgroup>
+        <col style={{ width: '38%' }} />
+        <col style={{ width: '12%' }} />
+        <col style={{ width: '22%' }} />
+        <col style={{ width: '14%' }} />
+        <col style={{ width: '14%' }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col">Hospital</th>
+          <th scope="col" className="num">Distance</th>
+          <th scope="col" className="num">Median wait</th>
+          <th scope="col" className="num">Seen within 18 weeks</th>
+          <th scope="col" className="num">Patients waiting</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((provider) => (
+          <ResultRow key={provider.odsCode} provider={provider} scale={scale} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+export default async function Home({ searchParams }: { searchParams: Promise<Params> }) {
+  const params = await searchParams;
+  const [specialties, periods] = await Promise.all([listSpecialties(), listPeriods()]);
+
+  const postcodeInput = (first(params.postcode) ?? '').trim();
+  const specialtyParam = first(params.specialty);
+  const specialty = specialties.find((entry) => entry.code === specialtyParam) ?? null;
+  const radius = (RADII.find((value) => String(value) === first(params.radius)) ?? 25) as Radius;
+  const submitted = postcodeInput !== '' || specialtyParam !== undefined;
+
+  const lookup = submitted && postcodeInput !== '' ? await lookupPostcode(postcodeInput) : null;
+  const providers =
+    lookup?.ok && specialty ? await findProviders(lookup.lat, lookup.lng, specialty.code, radius) : [];
+  const groups = groupByTie(providers);
+  const scale = measureScale(groups);
+
+  return (
+    <div className="shell">
+      <header className="masthead">
+        <h1>Where would you be seen sooner?</h1>
+        <p>
+          You have the right to choose which hospital treats you. Compare how long hospitals near you
+          are taking, using NHS England&rsquo;s published waiting times.
+        </p>
+      </header>
+
+      <form className="search" method="get" action="/">
+        <div className="field">
+          <label htmlFor="postcode">Your postcode</label>
+          <input
+            id="postcode"
+            name="postcode"
+            defaultValue={postcodeInput}
+            placeholder="LS1 4AP"
+            autoComplete="postal-code"
+            spellCheck={false}
+            required
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="specialty">Treatment you need</label>
+          <select id="specialty" name="specialty" defaultValue={specialty?.code ?? ''} required>
+            <option value="" disabled>
+              Choose a treatment
+            </option>
+            {specialties.map((entry) => (
+              <option key={entry.code} value={entry.code}>
+                {entry.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="radius">How far you can travel</label>
+          <select id="radius" name="radius" defaultValue={String(radius)}>
+            {RADII.map((value) => (
+              <option key={value} value={value}>
+                Within {value} miles
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button type="submit">Show hospitals</button>
+      </form>
+
+      {submitted && postcodeInput === '' && (
+        <div className="notice">
+          <p>Enter your postcode to compare hospitals near you.</p>
+        </div>
+      )}
+
+      {lookup && !lookup.ok && (
+        <div className="notice">
+          <p>{FAILURE_TEXT[lookup.reason][0]}</p>
+          <p>{FAILURE_TEXT[lookup.reason][1]}</p>
+        </div>
+      )}
+
+      {lookup?.ok && !specialty && (
+        <div className="notice">
+          <p>Choose the treatment you need to see which hospitals are quickest.</p>
+        </div>
+      )}
+
+      {lookup?.ok && specialty && (
+        <>
+          <section className="summary">
+            <h2>
+              {specialty.name} within {radius} miles of {lookup.postcode}
+            </h2>
+            <p>
+              {providers.length === 0
+                ? 'No hospitals in range reported this treatment. Try a wider distance.'
+                : `${providers.length} hospital${providers.length === 1 ? '' : 's'}, shortest wait first. Hospitals within ${TIE_TOLERANCE_WEEKS} weeks of each other are shown together, because the difference between them is not big enough to rank.`}
+            </p>
+          </section>
+
+          {groups.map((group, index) => {
+            const heading =
+              group.kind === 'ranked'
+                ? {
+                    band: bandLabel(group),
+                    note:
+                      group.rows.length > 1
+                        ? `${group.rows.length} hospitals, too close to separate`
+                        : null,
+                  }
+                : group.kind === 'suppressed'
+                  ? {
+                      band: 'Wait not published',
+                      note: `${plural(group.rows.length, 'hospital')} had too few patients waiting for NHS England to publish a median`,
+                    }
+                  : {
+                      band: 'No one waiting now',
+                      note:
+                        group.rows.length === 1
+                          ? '1 hospital does this treatment but had nobody waiting when it last reported'
+                          : `${group.rows.length} hospitals do this treatment but had nobody waiting when they last reported`,
+                    };
+
+            return (
+              <section
+                className="group"
+                key={group.kind === 'ranked' ? `ranked-${group.minWeeks}-${index}` : group.kind}
+              >
+                <div className="group-head">
+                  <span className="group-band">{heading.band}</span>
+                  {heading.note && <span className="group-note">{heading.note}</span>}
+                </div>
+                <ResultTable rows={group.rows} scale={scale} showHeader={index === 0} />
+              </section>
+            );
+          })}
+        </>
+      )}
+
+      <footer>
+        <p>
+          Waiting times are from NHS England&rsquo;s monthly referral to treatment statistics. The
+          median wait is how long half of the patients still waiting have been waiting; it is not a
+          prediction of your own wait.
+        </p>
+        <p>
+          Distances are straight-line from the centre of your postcode. Talk to your GP before asking
+          to be referred elsewhere.
+        </p>
+        <p>
+          {periods.length === 0
+            ? 'No waiting times are loaded yet.'
+            : `Covering ${periods.length === 1 ? 'one month' : `${periods.length} months`}, ${formatPeriod(periods[periods.length - 1])} to ${formatPeriod(periods[0])}. A hospital that has had nobody waiting for a treatment for the last ${ACTIVITY_WINDOW_MONTHS} months is not listed for it.`}
+        </p>
+      </footer>
+    </div>
+  );
+}

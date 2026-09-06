@@ -7,8 +7,9 @@ by finding hospitals with shorter waits for a given specialty.
 
 ## Setup
 
-Requires Node 22+ (the scripts are TypeScript, run directly by Node) and
-Postgres 14 or newer. Verified on Node 26 and Postgres 17.
+Verified on Node 26 and Postgres 17. The scripts are TypeScript run directly by
+Node with no build step, so Node must be recent enough to strip types natively;
+Postgres 14 or newer.
 
 ```bash
 npm install
@@ -25,8 +26,9 @@ or RDS, create it in their console and set `DATABASE_SSL=true`.
 own transaction, and records it in `schema_migrations`. It is safe to re-run —
 a second run reports `no pending migrations`.
 
-With an empty database the app starts and the form renders, but every search
-returns nothing until you load a workbook. Do that next.
+With an empty database the app starts and the page renders, but the treatment
+list is built from the loaded data, so it is empty until you load a workbook.
+Do that next.
 
 ### Deploying
 
@@ -41,9 +43,9 @@ provider requires TLS) in the host's environment; nothing else is configured.
 The connection pool is created lazily and reused, so it survives across
 requests.
 
-Two outbound calls are made at request time — postcodes.io to geocode the
-search, and nothing else — so the host needs outbound HTTPS. `npm run
-load:providers` additionally calls the NHS ODS API, but only when you run it.
+One outbound call is made at request time — postcodes.io, to geocode the search
+— so the host needs outbound HTTPS. `npm run load:providers` also calls the NHS
+ODS API, but only when you run it.
 
 Data loading is a separate step from deployment: run the loaders against the
 same `DATABASE_URL`, from anywhere that can reach it.
@@ -65,8 +67,10 @@ duplicating them.
    npm run inspect -- --merges  # also list the merged ranges
    ```
 
-   These workbooks have a cover sheet, title rows above the table, and headers
-   split across two merged rows, so confirm the layout here first.
+   The 2025-26 and 2026-27 releases carry six sheets, with a block of metadata
+   rows and a caption above a single header row at row 14. Earlier releases
+   differ, which is why the loader derives the layout rather than assuming it —
+   confirm it here first.
 
 3. See what the loader derives from it, without writing:
 
@@ -78,7 +82,7 @@ duplicating them.
    field. If that mapping is wrong, correct it rather than editing the parser:
 
    ```bash
-   npm run load -- --sheet Provider --header-row 5 --map patients_waiting=H,median_wait_weeks=J
+   npm run load -- --sheet Provider --header-row 14 --map patients_waiting=DH,median_wait_weeks=DK
    ```
 
 4. Load it:
@@ -162,6 +166,8 @@ npm run validate -- --file data/Incomplete-Provider-Jun26-...xlsx \
 ```
 
 It exits non-zero if anything fails to reconcile, so it can gate a monthly load.
+`--file` and `--csv` default to the only `.xlsx` and `.csv` in `./data`;
+`--limit` caps how many mismatching providers are listed (default 20).
 
 The two publications do not agree line for line by design: the provider workbook
 excludes the `NONC` commissioner (patients commissioned outside England) and the
@@ -194,16 +200,24 @@ duplicating.
 npm test
 ```
 
-`test:csv` checks the CSV reader against quoted commas, doubled quotes and
-chunk boundaries — the shapes that silently misalign columns. `test:ods` checks
-the ODS response handling against recorded payloads, with no
-network. `test:schema` applies the migrations to an in-process Postgres (PGlite) and
-checks the constraints. `test:load` builds a workbook shaped like the real
-release — a cover sheet, a caption row above a single header row, a second
-provider sheet whose header is split over two merged rows, a decision-to-admit
-sheet that must be ignored, thousands separators, suppressed values and total
-rows — then parses it, loads it, and re-loads it to prove the upsert is
-idempotent. Neither needs a database server.
+Five suites, none of which needs a database server or a network connection —
+`test:schema`, `test:load` and `test:search` run against an in-process Postgres
+(PGlite).
+
+- `test:schema` applies the migrations and checks the constraints the loaders
+  depend on: the upsert key, the foreign key, and suppressed values staying
+  `NULL`.
+- `test:load` builds a workbook with the awkward shapes — a cover sheet, a
+  caption row above a single header row, a second provider sheet whose header is
+  split over two merged rows, a decision-to-admit sheet that must be ignored,
+  thousands separators, suppressed values and total rows — then parses, loads
+  and re-loads it to prove the upsert is idempotent.
+- `test:search` covers the ranking judgements: tie grouping and its boundaries,
+  the activity window, and the freshness cut-off.
+- `test:ods` checks the ODS response handling against recorded payloads.
+- `test:csv` checks the CSV reader against quoted commas, doubled quotes and a
+  value spanning a read-buffer boundary — the shapes that silently misalign
+  every column after them.
 
 To eyeball the sample workbook itself:
 
@@ -225,10 +239,10 @@ Two judgements are worth knowing about, because they shape what patients see:
 
 **Waits that are close are not ranked against each other.** Walking down the
 sorted list, the shortest ungrouped wait anchors a group and takes everyone
-within two weeks of *it*. Chaining from each successive provider instead would
+within three weeks of *it*. Chaining from each successive provider instead would
 let a run of small gaps swallow the list, so a 4-week and a 16-week wait could
 end up presented as equivalent. `TIE_TOLERANCE_WEEKS` in `lib/search.ts` sets
-the width.
+the width, currently 3.
 
 **A provider that published no median is shown, not hidden — but the two reasons
 are separated.** NHS England suppresses the median where only a handful of
@@ -267,6 +281,24 @@ page says which failed — an unrecognised postcode or an unreachable service �
 and shows nothing, rather than falling back to a default location that would
 produce a plausible but wrong ranking.
 
+## Licence and data
+
+The code is MIT licensed; see [LICENSE](LICENSE).
+
+The data is not ours and carries its own terms. This project contains public
+sector information licensed under the
+[Open Government Licence v3.0](http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/):
+
+- Referral to treatment waiting times, © NHS England.
+- Organisation Data Service records, © NHS England.
+- Postcode coordinates via [postcodes.io](https://postcodes.io), derived from the
+  ONS Postcode Directory: contains OS data © Crown copyright and database right;
+  contains Royal Mail data © Royal Mail copyright and database right; contains
+  National Statistics data © Crown copyright and database right.
+
+Waiting times shown by this project are a reformatting of NHS England's
+published figures. It is not affiliated with or endorsed by NHS England.
+
 ## Known limitations
 
 - **No sector marker.** Independent-sector providers and NHS trusts are ranked
@@ -277,5 +309,4 @@ produce a plausible but wrong ranking.
 ## Next steps
 
 - Mark which providers are independent sector rather than NHS trusts.
-- Load more months; two is enough to spot an empty queue, not enough for trends.
-- Cache postcode lookups; every search currently hits postcodes.io.
+- Travel time rather than straight-line distance.

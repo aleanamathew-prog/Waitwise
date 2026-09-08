@@ -1,16 +1,36 @@
+/*
+ * Editorial print register: warm paper, warm near-black ink, one green.
+ * Restraint is the point — no gradients, shadows, rounded cards or animation.
+ */
+
 :root {
-  --paper: #fbfbf9;
-  --panel: #f2f2ee;
-  --ink: #16202b;
-  --muted: #5a6870;
-  --rule: #dcdfda;
-  --measure: #2e6a5b;
-  --measure-soft: #dce8e3;
-  --flag: #8a5a1f;
-  --alert: #9a2f16;
-  --alert-bg: #fdf0eb;
-  --focus: #1d4ed8;
-  --shell: 68rem;
+  --paper: #faf8f4;
+  --panel: #f3f0e9;
+  --ink: #1a1815;
+
+  /* Three greys mixed from the ink, so nothing on the page is neutral grey. */
+  --ink-70: #4c473f;
+  --ink-50: #6f685c;
+  --ink-30: #a29a8d;
+
+  /* Near-black at caption size, plainly green in a fill. */
+  --accent: #14361f;
+  --accent-fill: rgba(20, 54, 31, 0.55);
+
+  /* Reserved for a median NHS England did not publish. Nothing else. */
+  --ochre: #8f5d24;
+
+  /* Every rule on the page is the same hairline. */
+  --hairline: rgba(26, 24, 21, 0.11);
+  --hairline-strong: rgba(26, 24, 21, 0.22);
+
+  /* Three sizes, plus the 11px column header and the wait figure. */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-lg: 1.375rem;
+
+  --shell: 74rem;
 }
 
 * { box-sizing: border-box; }
@@ -22,167 +42,171 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
+
+a { color: var(--ink); text-decoration-color: var(--hairline-strong); text-underline-offset: 0.2em; }
+a:hover { text-decoration-color: var(--accent); }
 
 .shell {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 5rem;
+  padding: 4rem 1.5rem 7rem;
+}
+
+@media (min-width: 62rem) {
+  .shell { padding-left: 6rem; padding-right: 4rem; }
 }
 
 /* ---- masthead ---------------------------------------------------------- */
 
-.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; }
+.masthead { padding-bottom: 2.5rem; border-bottom: 1px solid var(--hairline-strong); }
 
 .masthead h1 {
-  font-family: var(--font-serif), Georgia, serif;
-  font-size: clamp(2.1rem, 6vw, 3.1rem);
+  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
   font-weight: 500;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.018em;
+  line-height: 1.15;
   margin: 0;
+  max-width: 22ch;
 }
 
 .masthead p {
-  margin: 0.5rem 0 0;
-  max-width: 46ch;
-  color: var(--muted);
+  margin: 1rem 0 0;
+  max-width: 48ch;
+  color: var(--ink-70);
 }
 
 /* ---- search ------------------------------------------------------------ */
 
 .search {
   display: grid;
-  gap: 1rem 1.25rem;
+  gap: 1.25rem 1.5rem;
   grid-template-columns: 1fr;
-  margin: 2rem 0 0;
-  padding: 1.5rem;
+  margin: 3rem 0 0;
+  padding: 1.75rem;
   background: var(--panel);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--hairline);
 }
 
 @media (min-width: 46rem) {
-  .search { grid-template-columns: 1fr 1.4fr 0.8fr auto; align-items: end; }
+  .search { grid-template-columns: 0.9fr 1.5fr 0.8fr auto; align-items: end; }
 }
 
-/* min-width:0 so a long option label cannot force the grid column — and with
-   it the page — wider than the viewport. */
-.field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
 
-.field label { font-size: 0.9rem; font-weight: 600; }
-
-.field .hint { font-size: 0.8rem; color: var(--muted); }
+.field label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-50);
+}
 
 .field input,
 .field select {
   width: 100%;
   font: inherit;
   color: inherit;
-  padding: 0.6rem 0.65rem;
-  background: #fff;
-  border: 1px solid #9aa5a3;
+  padding: 0.7rem 0.75rem;
+  background: var(--paper);
+  border: 1px solid var(--hairline-strong);
   border-radius: 0;
-  min-height: 2.9rem;
+  min-height: 3rem;
 }
 
-.field input { text-transform: uppercase; }
+.field input { text-transform: uppercase; letter-spacing: 0.04em; }
 
 button {
   font: inherit;
   font-weight: 600;
-  color: #fff;
-  background: var(--ink);
-  border: 1px solid var(--ink);
+  color: var(--paper);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 0;
-  padding: 0.7rem 1.4rem;
-  min-height: 2.9rem;
+  padding: 0.75rem 1.75rem;
+  min-height: 3rem;
   cursor: pointer;
 }
 
-button:hover { background: #24313f; }
+button:hover { background: #0e2716; }
 
-/* ---- messages ---------------------------------------------------------- */
+/* ---- notices ----------------------------------------------------------- */
 
 .notice {
-  margin: 2rem 0 0;
-  padding: 1rem 1.15rem;
-  border-left: 4px solid var(--flag);
-  background: #fdf7ee;
+  margin: 3rem 0 0;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--hairline-strong);
+  border-left: 2px solid var(--ink);
 }
 
-.notice p { margin: 0; }
-.notice p + p { margin-top: 0.5rem; color: var(--muted); }
+.notice p { margin: 0; max-width: 62ch; }
+.notice p + p { margin-top: 0.5rem; color: var(--ink-70); }
 
-/* ---- urgent referral warning ------------------------------------------- */
-
+/* An urgent referral is the one thing on this page that outranks a wait time,
+   so it takes the strongest treatment available without a second accent. */
 .alert {
-  margin: 2.5rem 0 0;
-  padding: 1.25rem 1.4rem;
-  background: var(--alert-bg);
-  border: 1px solid var(--alert);
-  border-left-width: 6px;
+  margin: 3rem 0 0;
+  padding: 1.75rem 2rem;
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .alert h2 {
-  margin: 0 0 0.5rem;
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 1.1rem;
-  line-height: 1.35;
-  color: var(--alert);
-}
-
-.alert p { margin: 0 0 0.5rem; max-width: 62ch; }
-.alert p:last-child { margin-bottom: 0; }
-
-/* ---- what to do next --------------------------------------------------- */
-
-.guide { margin: 3rem 0 0; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
-
-.guide h2 {
-  font-family: var(--font-serif), Georgia, serif;
+  margin: 0 0 0.75rem;
+  font-size: var(--text-lg);
   font-weight: 500;
-  font-size: 1.5rem;
-  margin: 0 0 1rem;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+  max-width: 34ch;
 }
 
-.guide ol { margin: 0; padding-left: 1.3rem; max-width: 66ch; }
-.guide li { margin-bottom: 0.85rem; }
-.guide li strong { font-weight: 600; }
-.guide > p { margin: 1.25rem 0 0; max-width: 66ch; }
+.alert p { margin: 0 0 0.6rem; max-width: 62ch; color: rgba(250, 248, 244, 0.82); }
+.alert p:last-child { margin-bottom: 0; }
 
 /* ---- results ----------------------------------------------------------- */
 
-.summary { margin: 2.5rem 0 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
-.summary h2 { font-family: var(--font-serif), Georgia, serif; font-weight: 500; font-size: 1.5rem; margin: 0; }
-.summary p { margin: 0.4rem 0 0; color: var(--muted); max-width: 60ch; }
+.summary { margin: 4rem 0 0; padding-bottom: 1.25rem; border-bottom: 1px solid var(--hairline-strong); }
 
-.group { margin-top: 2.25rem; }
+.summary h2 {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  margin: 0;
+}
+
+.summary p { margin: 0.75rem 0 0; color: var(--ink-70); max-width: 62ch; }
+
+.group { margin-top: 4.5rem; }
+.group:first-of-type { margin-top: 3.5rem; }
 
 .group-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.5rem 0.9rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--ink);
+  gap: 0.5rem 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--hairline-strong);
 }
 
 .group-band {
-  font-family: var(--font-serif), Georgia, serif;
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
+  font-weight: 500;
+  letter-spacing: -0.012em;
 }
 
-.group-note { font-size: 0.85rem; color: var(--muted); }
+.group-note { font-size: var(--text-sm); color: var(--ink-50); }
 
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-/* Kept in the accessibility tree, out of the way visually. */
 .headerless thead {
   position: absolute;
   width: 1px;
@@ -192,70 +216,117 @@ table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 }
 
 thead th {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-50);
   text-align: left;
-  padding: 0.6rem 0.5rem;
-  border-bottom: 1px solid var(--rule);
+  padding: 1rem 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 thead th.num, td.num { text-align: right; }
 
-tbody td { padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--rule); vertical-align: top; overflow-wrap: anywhere; }
+tbody td {
+  padding: 1.4rem 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
 
-.provider-name { font-weight: 600; }
+.provider-name { font-weight: 600; letter-spacing: -0.005em; }
 
-/* Independent-sector providers treat NHS patients under contract; a patient
-   choosing between them and a trust should be able to tell which is which. */
 .sector {
   display: inline-block;
   margin-left: 0.5rem;
-  padding: 0.05rem 0.35rem;
-  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--measure);
-  border: 1px solid var(--measure);
-  vertical-align: 0.1em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-70);
+  border: 1px solid var(--hairline-strong);
+  vertical-align: 0.12em;
 }
 
-.row-quiet .sector { color: var(--muted); border-color: var(--rule); }
-
-/* The same tag quoted inside a sentence, so a reader connects the two. */
+.row-quiet .sector { color: var(--ink-50); }
 .guide .sector { margin-left: 0; vertical-align: baseline; }
 
-.vintage { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+.vintage { display: block; font-size: var(--text-sm); color: var(--ink-50); margin-top: 0.35rem; }
 
-.wait { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
+.wait { display: flex; flex-direction: column; gap: 0.55rem; align-items: flex-end; }
 
-.wait-figure { font-family: var(--font-serif), Georgia, serif; font-size: 1.35rem; line-height: 1; }
-.wait-figure .unit { font-family: var(--font-sans), system-ui, sans-serif; font-size: 0.78rem; color: var(--muted); }
+.wait-figure {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--accent);
+}
 
-/* A suppressed median is worth noticing; an empty queue is not a warning. */
-.wait-unreported { color: var(--flag); font-size: 0.95rem; }
-.wait-empty { color: var(--muted); font-size: 0.95rem; }
+.wait-figure .unit {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-50);
+}
 
-.row-quiet .provider-name { font-weight: 500; }
-.row-quiet td { color: var(--muted); }
+.wait-unreported { color: var(--ochre); font-size: var(--text-sm); }
+.wait-empty { color: var(--ink-50); font-size: var(--text-sm); }
 
-.measure { width: min(11rem, 34vw); height: 0.4rem; background: var(--measure-soft); }
-.measure span { display: block; height: 100%; min-width: 3px; background: var(--measure); }
+.row-quiet .provider-name { font-weight: 500; color: var(--ink-70); }
+.row-quiet td { color: var(--ink-50); }
 
-td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A rule the fill sits on, rather than a track it fills. */
+.measure { position: relative; width: min(12rem, 34vw); height: 3px; background: transparent; }
+.measure::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--hairline-strong); }
+.measure span { position: absolute; left: 0; bottom: 0; height: 3px; min-width: 2px; background: var(--accent-fill); }
 
-.muted { color: var(--muted); }
+td.num { white-space: nowrap; }
+.muted { color: var(--ink-50); }
+
+/* ---- what to do next --------------------------------------------------- */
+
+.guide { margin: 5rem 0 0; padding-top: 2rem; border-top: 1px solid var(--hairline-strong); }
+
+.guide h2 {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  margin: 0 0 1.5rem;
+}
+
+.guide ol { margin: 0; padding-left: 1.4rem; max-width: 64ch; }
+.guide li { margin-bottom: 1.1rem; color: var(--ink-70); }
+.guide li strong { font-weight: 600; color: var(--ink); }
+.guide li::marker { color: var(--ink-30); }
+.guide > p { margin: 1.5rem 0 0; max-width: 64ch; color: var(--ink-70); }
 
 /* ---- stacked rows on small screens ------------------------------------- */
 
 @media (max-width: 47.99rem) {
   thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  tbody tr { display: block; padding: 1rem 0; border-bottom: 1px solid var(--rule); }
-  tbody td { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; border: 0; padding: 0.2rem 0; text-align: right; }
-  tbody td:first-child { display: block; text-align: left; padding-bottom: 0.5rem; }
-  tbody td[data-label]::before { content: attr(data-label); font-size: 0.8rem; color: var(--muted); text-align: left; }
+  tbody tr { display: block; padding: 1.5rem 0; border-bottom: 1px solid var(--hairline); }
+  tbody td { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; border: 0; padding: 0.3rem 0; text-align: right; }
+  tbody td:first-child { display: block; text-align: left; padding-bottom: 0.75rem; }
+  tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-50);
+    text-align: left;
+  }
   .wait { align-items: flex-end; }
 }
 
-footer { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.85rem; max-width: 68ch; }
-footer p { margin: 0 0 0.5rem; }
+footer {
+  margin-top: 5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-50);
+  font-size: var(--text-sm);
+  max-width: 68ch;
+}
+footer p { margin: 0 0 0.6rem; }

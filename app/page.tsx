@@ -141,11 +141,11 @@ function ResultTable({
     // but hide it, since repeating it under every band is just noise.
     <table className={showHeader ? undefined : 'headerless'}>
       <colgroup>
-        <col style={{ width: '38%' }} />
-        <col style={{ width: '12%' }} />
-        <col style={{ width: '22%' }} />
-        <col style={{ width: '14%' }} />
-        <col style={{ width: '14%' }} />
+        <col style={{ width: '33%' }} />
+        <col style={{ width: '11%' }} />
+        <col style={{ width: '21%' }} />
+        <col style={{ width: '19%' }} />
+        <col style={{ width: '16%' }} />
       </colgroup>
       <thead>
         <tr>

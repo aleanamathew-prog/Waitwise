@@ -1,17 +1,19 @@
 import type { ReactNode } from 'react';
-import { Newsreader, Public_Sans } from 'next/font/google';
+import { Instrument_Sans, Newsreader } from 'next/font/google';
 import './globals.css';
 
-const sans = Public_Sans({
+const sans = Instrument_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-sans',
 });
 
+// Newsreader is used for one thing only: the wait figure, which is the number
+// the whole page exists to show.
 const serif = Newsreader({
   subsets: ['latin'],
   display: 'swap',
-  weight: ['400', '500'],
+  weight: ['400'],
   variable: '--font-serif',
 });
 

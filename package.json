@@ -18,7 +18,8 @@
     "test:ods": "node scripts/test-ods.ts",
     "test:search": "node scripts/test-search.ts",
     "test:csv": "node scripts/test-csv.ts",
-    "test": "npm run test:schema && npm run test:load && npm run test:ods && npm run test:search && npm run test:csv"
+    "test:db": "node scripts/test-db.ts",
+    "test": "npm run test:schema && npm run test:load && npm run test:ods && npm run test:search && npm run test:csv && npm run test:db"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

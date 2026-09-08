@@ -12,3 +12,8 @@ data/*.zip
 
 # Cached ODS API responses.
 data/.ods-cache.json
+
+# Vercel env pulls
+.env*.local
+.vercel
+.env*

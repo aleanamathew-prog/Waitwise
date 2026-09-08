@@ -14,6 +14,15 @@ import { formatCount, formatMiles, formatPercent, formatPeriod, formatWeeks } fr
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Run next to the database. Every render makes two Postgres round trips and a
+ * search makes three, so placing the function away from the data adds a
+ * transatlantic hop to each one — the first deployment ran in iad1 against a
+ * database in eu-west-2. Kept here as well as in the project settings so the
+ * choice is reviewable and travels with the code.
+ */
+export const preferredRegion = 'lhr1';
+
 type Params = Record<string, string | string[] | undefined>;
 
 /** A repeated query parameter (?postcode=a&postcode=b) arrives as an array. */

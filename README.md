@@ -67,9 +67,12 @@ ODS API, but only when you run it.
 Data loading is a separate step from deployment: run the loaders against the
 same `DATABASE_URL`, from anywhere that can reach it.
 
-Set the function region to match the database. The live deployment initially ran
-in `iad1` against a database in `eu-west-2`, so every query crossed the Atlantic
-twice.
+Run the function next to the database. `app/page.tsx` declares
+`preferredRegion = 'lhr1'` so the choice travels with the code, but for the
+Node.js runtime the region Vercel actually uses comes from the project's
+function settings (or `regions` in `vercel.json`) — set it there too. The first
+deployment ran in `iad1` against a database in `eu-west-2`, so every query
+crossed the Atlantic twice.
 
 If a render fails, `app/error.tsx` shows what went wrong and the error digest,
 which is the handle the runtime logs share with the page. Connections give up

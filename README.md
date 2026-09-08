@@ -1,11 +1,34 @@
 # WaitWise
 
+People in England wait months for planned treatment without knowing they have a
+legal right to choose which hospital treats them, and the waiting times that
+would inform that choice are published as spreadsheets nobody reads. WaitWise
+turns those spreadsheets into one question: where near you would you be seen
+sooner?
+
 **Live: https://waitwise-tau.vercel.app**
 
-Helps NHS patients in England exercise their legal right to choose a provider,
-by finding hospitals with shorter waits for a given specialty.
+Search cardiology from **E1 3LN**, in Tower Hamlets. The local trust, half a
+mile away, has a median wait of **9.6 weeks with 8,603 people queued**. Eight
+miles away the wait is **2.9 weeks** — at a much smaller service, with 59 people
+waiting. Both figures are NHS England's own, published in the same release, for
+the same month.
 
-**Status: data layer plus one search page.**
+![Cardiology near E1 3LN: hospitals grouped into tie bands by median wait](docs/results.png)
+
+Measured, not asserted:
+
+- **Reconciles to zero difference on 7,147,562 patients.** `npm run validate`
+  checks every provider total against NHS England's separate full CSV extract,
+  and exits non-zero on any mismatch.
+- **552 providers geocoded, no failures.** Every one resolved through the NHS
+  Organisation Data Service and postcodes.io — no missing address, postcode or
+  coordinate.
+- **Waits within three weeks of each other are not ranked.** They are shown as a
+  tied group, because the data does not support ordering them.
+- **A suppressed median is never shown as zero.** NHS England withholds the
+  figure where few patients are waiting; that is displayed as "not published",
+  separately from hospitals with nobody waiting at all.
 
 ## Setup
 

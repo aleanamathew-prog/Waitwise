@@ -75,7 +75,10 @@ function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number 
       <td>
         <span className="provider-name">{provider.name}</span>
         {provider.sector === 'independent' && (
-          <span className="sector" title="Independent sector, treating NHS patients under contract">
+          <span
+            className="sector"
+            title="Treats NHS patients under NHS contract — free at the point of use, referred by your GP the same way"
+          >
             Independent
           </span>
         )}
@@ -332,6 +335,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
         <section className="guide">
           <h2>Asking to be treated somewhere else</h2>
           <ol>
+            {providers.some((provider) => provider.sector === 'independent') && (
+              <li>
+                <strong>
+                  Hospitals marked <span className="sector">Independent</span> are still NHS
+                  treatment.
+                </strong>{' '}
+                They are independent-sector providers treating NHS patients under an NHS
+                contract: free at the point of use, and your GP refers you the same way. They
+                appear here for that reason.
+              </li>
+            )}
             <li>
               <strong>Say so before you are referred.</strong> Tell your GP which hospital you
               would prefer. For most planned care you can name any hospital in England that

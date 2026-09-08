@@ -222,6 +222,9 @@ tbody td { padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--rule); vertic
 
 .row-quiet .sector { color: var(--muted); border-color: var(--rule); }
 
+/* The same tag quoted inside a sentence, so a reader connects the two. */
+.guide .sector { margin-left: 0; vertical-align: baseline; }
+
 .vintage { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
 
 .wait { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }

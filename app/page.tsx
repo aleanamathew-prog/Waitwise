@@ -89,7 +89,7 @@ function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number 
           ) : (
             <>
               <span className="wait-figure">
-                {formatWeeks(weeks)}
+                {formatWeeks(weeks)}{' '}
                 <span className="unit">weeks</span>
               </span>
               <span className="measure" aria-hidden="true">
@@ -246,6 +246,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
 
       {lookup?.ok && specialty && (
         <>
+          <section className="alert" role="note" aria-labelledby="urgent-heading">
+            <h2 id="urgent-heading">If your referral is urgent, do not choose on waiting times</h2>
+            <p>
+              Urgent referrals and suspected-cancer referrals — the ones often called
+              two-week-wait — are booked through a different route, and these figures do not
+              describe them. Choosing a hospital from this page could delay you.
+            </p>
+            <p>Speak to your GP, or to whoever referred you, before you do anything else.</p>
+          </section>
+
           <section className="summary">
             <h2>
               {specialty.name} within {radius} miles of {lookup.postcode}
@@ -294,6 +304,39 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
             );
           })}
         </>
+      )}
+
+      {lookup?.ok && specialty && providers.length > 0 && (
+        <section className="guide">
+          <h2>Asking to be treated somewhere else</h2>
+          <ol>
+            <li>
+              <strong>Say so before you are referred.</strong> Tell your GP which hospital you
+              would prefer. For most planned care you can name any hospital in England that
+              offers the treatment and holds an NHS contract.
+            </li>
+            <li>
+              <strong>You can still ask after a referral has been made.</strong> Contact your GP
+              practice and ask to be referred somewhere else. A referral can be changed.
+            </li>
+            <li>
+              <strong>Check you can get there.</strong> Travel is usually your own
+              responsibility, and treatment can mean several visits, not one.
+            </li>
+            <li>
+              <strong>Ask the hospital what its wait means for you.</strong> A median is the
+              middle of everyone currently waiting. Your own wait depends on your condition and
+              on how urgent your referral is.
+            </li>
+          </ol>
+          <p>
+            More on this right:{' '}
+            <a href="https://www.nhs.uk/using-the-nhs/about-the-nhs/your-choices-in-the-nhs/">
+              your choices in the NHS
+            </a>
+            .
+          </p>
+        </section>
       )}
 
       <footer>

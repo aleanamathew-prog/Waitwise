@@ -7,6 +7,8 @@
   --measure: #2e6a5b;
   --measure-soft: #dce8e3;
   --flag: #8a5a1f;
+  --alert: #9a2f16;
+  --alert-bg: #fdf0eb;
   --focus: #1d4ed8;
   --shell: 68rem;
 }
@@ -114,6 +116,43 @@ button:hover { background: #24313f; }
 .notice p { margin: 0; }
 .notice p + p { margin-top: 0.5rem; color: var(--muted); }
 
+/* ---- urgent referral warning ------------------------------------------- */
+
+.alert {
+  margin: 2.5rem 0 0;
+  padding: 1.25rem 1.4rem;
+  background: var(--alert-bg);
+  border: 1px solid var(--alert);
+  border-left-width: 6px;
+}
+
+.alert h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  color: var(--alert);
+}
+
+.alert p { margin: 0 0 0.5rem; max-width: 62ch; }
+.alert p:last-child { margin-bottom: 0; }
+
+/* ---- what to do next --------------------------------------------------- */
+
+.guide { margin: 3rem 0 0; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
+
+.guide h2 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
+}
+
+.guide ol { margin: 0; padding-left: 1.3rem; max-width: 66ch; }
+.guide li { margin-bottom: 0.85rem; }
+.guide li strong { font-weight: 600; }
+.guide > p { margin: 1.25rem 0 0; max-width: 66ch; }
+
 /* ---- results ----------------------------------------------------------- */
 
 .summary { margin: 2.5rem 0 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
@@ -169,7 +208,7 @@ tbody td { padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--rule); vertic
 .wait { display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
 
 .wait-figure { font-family: var(--font-serif), Georgia, serif; font-size: 1.35rem; line-height: 1; }
-.wait-figure .unit { font-family: var(--font-sans), system-ui, sans-serif; font-size: 0.78rem; color: var(--muted); margin-left: 0.25rem; }
+.wait-figure .unit { font-family: var(--font-sans), system-ui, sans-serif; font-size: 0.78rem; color: var(--muted); }
 
 /* A suppressed median is worth noticing; an empty queue is not a warning. */
 .wait-unreported { color: var(--flag); font-size: 0.95rem; }

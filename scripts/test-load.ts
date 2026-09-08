@@ -49,7 +49,18 @@ async function main(): Promise<void> {
     assert.equal(nhs.skipped.aggregate, 1, 'the Total row should not become a snapshot');
     assert.equal(nhs.rows.length, 4);
 
+    assert.equal(nhs.sector, 'nhs');
+
     const is = result.sheets[1];
+    assert.equal(is.sector, 'independent', 'the sheet captions itself Independent Sector');
+    assert.ok(
+      result.rows.filter((row) => row.sector === 'independent').length === is.rows.length,
+      'every row from that sheet carries the sector',
+    );
+    assert.ok(
+      result.rows.some((row) => row.sector === 'nhs'),
+      'and rows from the trust sheet do not',
+    );
     assert.equal(is.columns.treatment_function_name, 4, 'merged two-row header still resolves');
     assert.equal(is.skipped.aggregate, 1);
     assert.equal(is.rows.length, 2);
@@ -88,6 +99,14 @@ async function main(): Promise<void> {
     const counts = await db.query<{ providers: number; snapshots: number }>(
       `SELECT (SELECT count(*) FROM providers)::int AS providers,
               (SELECT count(*) FROM wait_snapshots)::int AS snapshots`,
+    );
+    const sectors = await db.query<{ sector: string; n: number }>(
+      'SELECT sector, count(*)::int AS n FROM providers GROUP BY sector ORDER BY sector',
+    );
+    assert.deepEqual(
+      sectors.rows,
+      [{ sector: 'independent', n: 2 }, { sector: 'nhs', n: 3 }],
+      'the sector reaches the providers table',
     );
     assert.equal(counts.rows[0].providers, 5);
     assert.equal(counts.rows[0].snapshots, 6);

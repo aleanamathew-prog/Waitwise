@@ -15,7 +15,7 @@ import { columnLetter, toInteger, toNumber } from './xlsx.ts';
 import { eachSheet } from './workbook.ts';
 import { REQUIRED_FIELDS, buildLabels, detectHeader, mapColumns } from './rtt-headers.ts';
 import type { ColumnMap, FieldKey } from './rtt-headers.ts';
-import type { SnapshotRow } from './ingest.ts';
+import type { SnapshotRow, Sector } from './ingest.ts';
 
 export { REQUIRED_FIELDS };
 
@@ -37,6 +37,14 @@ const DEFAULT_SCAN_ROWS = 30;
  */
 const DIFFERENT_MEASURE = /decision to admit/;
 
+/**
+ * The independent-sector sheet captions itself "Independent Sector Provider
+ * Level Data", which is carried into every stacked column label. Read the
+ * sector from the sheet's own words rather than its name, for the same reason
+ * the decision-to-admit guard does.
+ */
+const INDEPENDENT_SECTOR = /independent sector/;
+
 export type SheetResult = {
   sheetName: string;
   headerRowNumber: number;
@@ -46,6 +54,7 @@ export type SheetResult = {
   skipped: { noProvider: number; noTreatmentFunction: number; aggregate: number };
   /** Fields that only resolved once the header row was read without its caption. */
   viaLeaf: FieldKey[];
+  sector: Sector;
 };
 
 export type ParseResult = {
@@ -117,6 +126,7 @@ export async function parseWorkbook(
     let labels: string[] = [];
     let headerRowNumber = 0;
     let viaLeaf: FieldKey[] = [];
+    let sector: Sector = 'nhs';
 
     for await (const row of sheetRows) {
       if (!columns) {
@@ -146,6 +156,7 @@ export async function parseWorkbook(
         }
 
         if (columns) {
+          sector = labels.some((label) => INDEPENDENT_SECTOR.test(label)) ? 'independent' : 'nhs';
           const totalLabel = labels[(columns.patients_waiting ?? 0) - 1] ?? '';
           if (DIFFERENT_MEASURE.test(totalLabel)) {
             skippedSheets.push({ sheetName, reason: `total column is "${totalLabel}"` });
@@ -180,6 +191,7 @@ export async function parseWorkbook(
       rows.push({
         odsCode: odsCode.toUpperCase(),
         providerName: pick('provider_name') || null,
+        sector,
         treatmentFunctionCode,
         treatmentFunctionName: pick('treatment_function_name') || null,
         patientsWaiting: toInteger(pick('patients_waiting')),
@@ -193,7 +205,7 @@ export async function parseWorkbook(
       return 'continue';
     }
 
-    sheets.push({ sheetName, headerRowNumber, labels, columns, rows, skipped, viaLeaf });
+    sheets.push({ sheetName, headerRowNumber, labels, columns, rows, skipped, viaLeaf, sector });
     return 'continue';
   });
 

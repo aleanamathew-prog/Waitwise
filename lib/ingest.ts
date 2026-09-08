@@ -2,9 +2,13 @@
  * The write half of the loader, kept separate from the CLI so the schema tests
  * exercise exactly the SQL that production ingestion runs.
  */
+export type Sector = 'nhs' | 'independent';
+
 export type SnapshotRow = {
   odsCode: string;
   providerName: string | null;
+  /** Which sheet of the workbook the provider was published on. */
+  sector: Sector;
   treatmentFunctionCode: string;
   treatmentFunctionName: string | null;
   patientsWaiting: number | null;
@@ -24,21 +28,23 @@ export async function upsertProviders(
   client: Queryable,
   rows: SnapshotRow[],
 ): Promise<number> {
-  const providers = new Map<string, string>();
+  const providers = new Map<string, { name: string; sector: Sector }>();
   for (const row of rows) {
-    if (!providers.has(row.odsCode)) providers.set(row.odsCode, row.providerName ?? row.odsCode);
+    if (!providers.has(row.odsCode)) {
+      providers.set(row.odsCode, { name: row.providerName ?? row.odsCode, sector: row.sector });
+    }
   }
 
   // The RTT workbook carries only code and name. Address, postcode and
   // coordinates come from a separate ODS load, so they are left untouched here
   // rather than being overwritten with nulls.
-  for (const [odsCode, name] of providers) {
+  for (const [odsCode, { name, sector }] of providers) {
     await client.query(
-      `INSERT INTO providers (ods_code, name)
-       VALUES ($1, $2)
+      `INSERT INTO providers (ods_code, name, sector)
+       VALUES ($1, $2, $3)
        ON CONFLICT (ods_code) DO UPDATE
-         SET name = EXCLUDED.name, updated_at = now()`,
-      [odsCode, name],
+         SET name = EXCLUDED.name, sector = EXCLUDED.sector, updated_at = now()`,
+      [odsCode, name, sector],
     );
   }
   return providers.size;

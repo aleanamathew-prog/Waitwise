@@ -70,6 +70,7 @@ function addMergedHeaderSheet(
   const sheet = workbook.addWorksheet(name);
   addMetadata(sheet, 'Monthly RTT waiting times for incomplete pathways.');
 
+  sheet.getCell('A4').value = 'Independent Sector Provider Level Data';
   sheet.getCell('A5').value = 'Provider';
   sheet.mergeCells('A5:B5');
   sheet.getCell('C5').value = 'Treatment Function';

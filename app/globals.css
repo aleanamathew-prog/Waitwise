@@ -71,7 +71,9 @@ body {
   .search { grid-template-columns: 1fr 1.4fr 0.8fr auto; align-items: end; }
 }
 
-.field { display: flex; flex-direction: column; gap: 0.35rem; }
+/* min-width:0 so a long option label cannot force the grid column — and with
+   it the page — wider than the viewport. */
+.field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
 
 .field label { font-size: 0.9rem; font-weight: 600; }
 
@@ -79,6 +81,7 @@ body {
 
 .field input,
 .field select {
+  width: 100%;
   font: inherit;
   color: inherit;
   padding: 0.6rem 0.65rem;
@@ -202,6 +205,22 @@ thead th.num, td.num { text-align: right; }
 tbody td { padding: 0.85rem 0.5rem; border-bottom: 1px solid var(--rule); vertical-align: top; overflow-wrap: anywhere; }
 
 .provider-name { font-weight: 600; }
+
+/* Independent-sector providers treat NHS patients under contract; a patient
+   choosing between them and a trust should be able to tell which is which. */
+.sector {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--measure);
+  border: 1px solid var(--measure);
+  vertical-align: 0.1em;
+}
+
+.row-quiet .sector { color: var(--muted); border-color: var(--rule); }
 
 .vintage { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
 

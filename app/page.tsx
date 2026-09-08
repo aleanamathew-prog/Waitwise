@@ -74,6 +74,11 @@ function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number 
     <tr className={nothingWaiting ? 'row-quiet' : undefined}>
       <td>
         <span className="provider-name">{provider.name}</span>
+        {provider.sector === 'independent' && (
+          <span className="sector" title="Independent sector, treating NHS patients under contract">
+            Independent
+          </span>
+        )}
         <span className="vintage">
           data to {formatPeriod(provider.periodEnd)}
           {provider.postcode ? ` · ${provider.postcode}` : ''}
@@ -203,11 +208,28 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
             <option value="" disabled>
               Choose a treatment
             </option>
-            {specialties.map((entry) => (
-              <option key={entry.code} value={entry.code}>
-                {entry.name}
-              </option>
-            ))}
+            {specialties
+              .filter((entry) => !entry.residual)
+              .map((entry) => (
+                <option key={entry.code} value={entry.code}>
+                  {entry.hint ? `${entry.name} — ${entry.hint}` : entry.name}
+                </option>
+              ))}
+            {/*
+              NHS England's residual categories. A referral letter never names
+              one, so they sit apart from the specialties someone is looking
+              for — but they hold a fifth of everyone waiting, so they are not
+              hidden either.
+            */}
+            <optgroup label="If your referral does not match any of the above">
+              {specialties
+                .filter((entry) => entry.residual)
+                .map((entry) => (
+                  <option key={entry.code} value={entry.code}>
+                    {entry.hint ? `${entry.name} — ${entry.hint}` : entry.name}
+                  </option>
+                ))}
+            </optgroup>
           </select>
         </div>
 

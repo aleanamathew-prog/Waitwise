@@ -1,15 +1,17 @@
 import { getPool } from './db.ts';
+import { SPECIALTY_HINTS, isResidualCategory } from './specialties.ts';
 
 /** Anything with a parameterised `query` — a pg pool, or PGlite in tests. */
 export type Queryable = {
   query: <R>(text: string, values?: unknown[]) => Promise<{ rows: R[] }>;
 };
 
-export type Specialty = { code: string; name: string };
+export type Specialty = { code: string; name: string; hint: string | null; residual: boolean };
 
 export type ProviderWait = {
   odsCode: string;
   name: string;
+  sector: 'nhs' | 'independent' | null;
   postcode: string | null;
   distanceMiles: number;
   medianWaitWeeks: number | null;
@@ -79,7 +81,12 @@ export async function listSpecialties(): Promise<Specialty[]> {
       GROUP BY treatment_function_code
       ORDER BY max(treatment_function_name) NULLS LAST, treatment_function_code`,
   );
-  return rows.map((row) => ({ code: row.code, name: displaySpecialty(row.name ?? row.code) }));
+  return rows.map((row) => ({
+    code: row.code,
+    name: displaySpecialty(row.name ?? row.code),
+    hint: SPECIALTY_HINTS[row.code] ?? null,
+    residual: isResidualCategory(row.code),
+  }));
 }
 
 /** "Ophthalmology Service" is how the return names it; patients just say the specialty. */
@@ -100,6 +107,7 @@ export async function findProviders(
   const { rows } = await client.query<{
     ods_code: string;
     name: string;
+    sector: 'nhs' | 'independent' | null;
     postcode: string | null;
     distance_miles: string;
     median_wait_weeks: string | null;
@@ -149,7 +157,7 @@ export async function findProviders(
         WHERE l.period_end >= to_char(fresh_start.from_period, 'YYYY-MM-DD')
      ),
      located AS (
-       SELECT p.ods_code, p.name, p.postcode, l.patients_waiting, l.median_wait_weeks,
+       SELECT p.ods_code, p.name, p.sector, p.postcode, l.patients_waiting, l.median_wait_weeks,
               l.pct_within_18_weeks, l.period_end,
               $5 * acos(greatest(-1, least(1,
                 cos(radians($1)) * cos(radians(p.lat)) * cos(radians(p.lng) - radians($2))
@@ -170,6 +178,7 @@ export async function findProviders(
   return rows.map((row) => ({
     odsCode: row.ods_code,
     name: row.name,
+    sector: row.sector,
     postcode: row.postcode,
     distanceMiles: Number(row.distance_miles),
     medianWaitWeeks: row.median_wait_weeks === null ? null : Number(row.median_wait_weeks),

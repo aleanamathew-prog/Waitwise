@@ -26,6 +26,7 @@ function snapshot(overrides: Partial<SnapshotRow> = {}): SnapshotRow {
   return {
     odsCode: 'R0A',
     providerName: 'Manchester University NHS FT',
+    sector: 'nhs',
     treatmentFunctionCode: 'C_110',
     treatmentFunctionName: 'Trauma & Orthopaedics',
     patientsWaiting: 12431,

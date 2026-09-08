@@ -16,6 +16,7 @@ function provider(
   return {
     odsCode,
     name: odsCode,
+    sector: 'nhs',
     postcode: 'LS1 4AP',
     distanceMiles: 5,
     medianWaitWeeks,
@@ -179,6 +180,7 @@ function snapshot(odsCode: string, patientsWaiting: number, median: number | nul
   return {
     odsCode,
     providerName: odsCode,
+    sector: 'nhs' as const,
     treatmentFunctionCode: 'C_320',
     treatmentFunctionName: 'Cardiology Service',
     patientsWaiting,

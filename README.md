@@ -1,5 +1,7 @@
 # WaitWise
 
+**Live: https://waitwise-tau.vercel.app**
+
 Helps NHS patients in England exercise their legal right to choose a provider,
 by finding hospitals with shorter waits for a given specialty.
 
@@ -21,6 +23,12 @@ npm run dev                # http://localhost:3000
 The database must exist before you migrate; the migration creates tables, not
 the database. On a local server that is `createdb waitwise`. On Neon, Supabase
 or RDS, create it in their console.
+
+`DATABASE_URL` must be the connection string alone — no `DATABASE_URL=` prefix,
+no wrapping quotes, no `psql '...'` around it. Anything before the scheme parses
+into a host called `base`, taken from the middle of the word "database", and
+fails much later as `getaddrinfo ENOTFOUND base`. The app rejects such a value
+at startup and names the mistake.
 
 **TLS.** If the connection string already carries `sslmode` — as Neon's and
 Supabase's do — leave `DATABASE_SSL` unset. The driver reads `sslmode` itself and
@@ -59,11 +67,20 @@ ODS API, but only when you run it.
 Data loading is a separate step from deployment: run the loaders against the
 same `DATABASE_URL`, from anywhere that can reach it.
 
+Set the function region to match the database. The live deployment initially ran
+in `iad1` against a database in `eu-west-2`, so every query crossed the Atlantic
+twice.
+
+If a render fails, `app/error.tsx` shows what went wrong and the error digest,
+which is the handle the runtime logs share with the page. Connections give up
+after five seconds rather than hanging until the platform kills the function.
+
 ## Loading waiting-time data
 
-Fifteen months (April 2025 to June 2026) are loaded in development. The loaders
-are idempotent, so re-running any file replaces its figures rather than
-duplicating them.
+Fifteen months (April 2025 to June 2026) are loaded, in development and in the
+live deployment: 172,638 snapshots across 552 providers. The loaders are
+idempotent, so re-running any file replaces its figures rather than duplicating
+them.
 
 1. Download an **Incomplete Provider** workbook from NHS England's
    [RTT waiting times](https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/)
@@ -209,7 +226,7 @@ duplicating.
 npm test
 ```
 
-Five suites, none of which needs a database server or a network connection —
+Six suites, none of which needs a database server or a network connection —
 `test:schema`, `test:load` and `test:search` run against an in-process Postgres
 (PGlite).
 
@@ -227,6 +244,8 @@ Five suites, none of which needs a database server or a network connection —
 - `test:csv` checks the CSV reader against quoted commas, doubled quotes and a
   value spanning a read-buffer boundary — the shapes that silently misalign
   every column after them.
+- `test:db` checks the connection-string guard, including that no error message
+  ever echoes the value, which may be or contain the password.
 
 To eyeball the sample workbook itself:
 

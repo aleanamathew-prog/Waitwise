@@ -70,10 +70,15 @@ function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number 
   // With nobody waiting there is no percentage and no queue to state; "0%" and
   // "0" would read as a terrible service rather than an absent one.
   const nothingWaiting = provider.patientsWaiting === 0;
+  // NHS England withholds the median where too few patients are waiting. The
+  // percentage is computed from that same handful, so it is no more robust: of
+  // the rows with a single patient, it reads 0% or 100% depending on that one
+  // person. Showing it as a rate invites it to be read as a quality score.
+  const rateNotMeaningful = weeks === null && !nothingWaiting;
   return (
     <tr className={nothingWaiting ? 'row-quiet' : undefined}>
       <td>
-        <span className="provider-name">{provider.name}</span>
+        <span className="provider-name">{provider.name}</span>{' '}
         {provider.sector === 'independent' && (
           <span
             className="sector"
@@ -108,7 +113,7 @@ function ResultRow({ provider, scale }: { provider: ProviderWait; scale: number 
         </div>
       </td>
       <td className="num" data-label="Seen within 18 weeks">
-        {nothingWaiting || provider.pctWithin18Weeks === null ? (
+        {nothingWaiting || rateNotMeaningful || provider.pctWithin18Weeks === null ? (
           <span className="muted" aria-label="not applicable">&mdash;</span>
         ) : (
           formatPercent(provider.pctWithin18Weeks)
@@ -305,7 +310,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Par
                 : group.kind === 'suppressed'
                   ? {
                       band: 'Wait not published',
-                      note: `${plural(group.rows.length, 'hospital')} had too few patients waiting for NHS England to publish a median`,
+                      note: `${plural(group.rows.length, 'hospital')} had too few patients waiting for NHS England to publish a median, so the percentage is not shown either`,
                     }
                   : {
                       band: 'No one waiting now',

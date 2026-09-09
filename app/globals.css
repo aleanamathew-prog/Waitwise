@@ -264,11 +264,11 @@ tbody td {
   color: var(--accent);
 }
 
+/* The tracked uppercase treatment belongs to column headers and labels. The
+   unit sits inside a sentence-like figure, so it stays lower case. */
 .wait-figure .unit {
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: var(--text-sm);
   color: var(--ink-50);
 }
 

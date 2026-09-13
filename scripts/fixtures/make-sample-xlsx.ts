@@ -34,6 +34,11 @@ function addMetadata(sheet: ExcelJS.Worksheet, summary: string): void {
   sheet.getCell('C3').value = 'June 2026';
 }
 
+const LEAD_HEADERS = [
+  'Region Code', 'Provider Code', 'Provider Name',
+  'Treatment Function Code', 'Treatment Function',
+];
+
 /** The real release's shape: a caption row, then one header row. */
 function addCaptionStyleSheet(
   workbook: ExcelJS.Workbook,
@@ -41,6 +46,7 @@ function addCaptionStyleSheet(
   caption: string,
   summaryHeaders: string[],
   data: Array<Array<string | number>>,
+  leadHeaders: string[] = LEAD_HEADERS,
 ): void {
   const sheet = workbook.addWorksheet(name);
   addMetadata(sheet, 'Monthly RTT waiting times for incomplete pathways.');
@@ -49,8 +55,7 @@ function addCaptionStyleSheet(
   sheet.getCell('G5').value = 'The number of incomplete pathways by week since referral';
 
   const headers = [
-    'Region Code', 'Provider Code', 'Provider Name',
-    'Treatment Function Code', 'Treatment Function',
+    ...leadHeaders,
     ...BANDS, ...summaryHeaders,
   ];
   headers.forEach((label, i) => {
@@ -116,6 +121,46 @@ export async function writeSampleWorkbook(out: string): Promise<string> {
     ['A1D1B', 'SpaMedica Wembley', 'C_999', 'Total', 30, 25, 20, '1,004', 0.91, 5.2],
     ['Z9Z1G', 'SpaMedica Gateshead', 'C_130', 'Ophthalmology Service', 12, 9, 4, '318', 0.88, 6.1],
   ]);
+
+  await workbook.xlsx.writeFile(out);
+  return out;
+}
+
+/**
+ * Two data sheets where the second has a required column renamed — "Provider
+ * Code" published as "Organisation Identifier" — so header detection succeeds
+ * on the first sheet and fails on the second.
+ *
+ * This is the shape that used to be lost silently: the workbook parsed, exit
+ * code 0, and the majority of the rows simply absent.
+ *
+ * `dataRows` sets how many rows follow the header on the failing sheet, which
+ * is what decides how the scan gives up. The header sits on row 6, so a sheet
+ * shorter than `scanRows` runs out of rows with no candidate, while a longer
+ * one exhausts the scan window first. Those are separate branches in
+ * parseWorkbook, and each was its own hole.
+ */
+export async function writeRenamedRequiredColumnWorkbook(
+  out: string,
+  dataRows = 1,
+): Promise<string> {
+  const workbook = new ExcelJS.Workbook();
+
+  addCaptionStyleSheet(workbook, 'Provider', 'Provider Level Data', SUMMARY, [
+    ['Y56', 'R0A', 'Manchester University NHS FT', 'C_110', 'Trauma and Orthopaedic Service', 120, 90, 80, '12,431', 0.612, 14.2],
+  ]);
+
+  addCaptionStyleSheet(
+    workbook,
+    'IS Provider',
+    'Independent Sector Provider Level Data',
+    SUMMARY,
+    Array.from({ length: dataRows }, (_, i) => [
+      'Y56', 'Z9Z1G', 'SpaMedica Gateshead', 'C_130', 'Ophthalmology Service',
+      12, 9, 4, String(318 + i), 0.88, 6.1,
+    ]),
+    ['Region Code', 'Organisation Identifier', 'Provider Name', 'Treatment Function Code', 'Treatment Function'],
+  );
 
   await workbook.xlsx.writeFile(out);
   return out;

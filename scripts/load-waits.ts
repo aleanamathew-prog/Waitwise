@@ -12,13 +12,15 @@
  *   --period <YYYY-MM-DD>  reporting month end (default: parsed from the filename)
  *   --source <text>        value stored in wait_snapshots.source
  *   --scan <n>             rows to search for the header row (default 30)
- *   --map k=B,k2=D         override detected columns by letter or index
+ *   --map k=B,k2=D         override detected columns by letter or index;
+ *                          scope one to a sheet with --map "<sheet>:<field>=<col>"
  *   --dry-run              parse and report, no database writes
  */
 import { columnLetter } from '../lib/xlsx.ts';
 import { parseArgs, resolveInputFile, resolvePeriodEnd } from '../lib/cli.ts';
 import { REQUIRED_FIELDS, parseWorkbook } from '../lib/parse-workbook.ts';
-import type { ColumnMap, FieldKey } from '../lib/rtt-headers.ts';
+import type { FieldKey } from '../lib/rtt-headers.ts';
+import { parseOverrides, hasOverrides } from '../lib/overrides.ts';
 import { closePool, withTransaction } from '../lib/db.ts';
 import { upsertSnapshots } from '../lib/ingest.ts';
 
@@ -33,25 +35,6 @@ const REPORTED_FIELDS: FieldKey[] = [
   'median_wait_weeks',
   'pct_within_18_weeks',
 ];
-
-/** Parses `--map provider_code=B,patients_waiting=12` into column indexes. */
-function parseOverrides(raw: string | boolean | undefined): ColumnMap {
-  if (typeof raw !== 'string') return {};
-  const overrides: ColumnMap = {};
-  for (const pair of raw.split(',')) {
-    const [key, value] = pair.split('=').map((part) => part.trim());
-    if (!key || !value) throw new Error(`Bad --map entry "${pair}", expected field=column`);
-    const index = /^\d+$/.test(value)
-      ? Number(value)
-      : value
-          .toUpperCase()
-          .split('')
-          .reduce((acc, char) => acc * 26 + (char.charCodeAt(0) - 64), 0);
-    if (!Number.isFinite(index) || index < 1) throw new Error(`Bad column "${value}" in --map`);
-    overrides[key as FieldKey] = index;
-  }
-  return overrides;
-}
 
 async function main(): Promise<void> {
 
@@ -81,9 +64,13 @@ async function main(): Promise<void> {
     for (const field of REPORTED_FIELDS) {
       const index = sheet.columns[field];
       const required = REQUIRED_FIELDS.includes(field) ? ' (required)' : '';
+      // A label can be absent when a column carries none; say so rather than
+      // letting `undefined` stringify into the report as if it were a heading.
+      const label = index === undefined ? '' : sheet.labels[index - 1] ?? '(no label)';
+      const via = sheet.overridden.includes(field) ? '   <- --map' : '';
       console.log(
         index
-          ? `    ${field.padEnd(24)} ${columnLetter(index).padEnd(3)} "${sheet.labels[index - 1]}"`
+          ? `    ${field.padEnd(24)} ${columnLetter(index).padEnd(3)} "${label}"${via}`
           : `    ${field.padEnd(24)} —   not found${required}`,
       );
     }
@@ -117,6 +104,20 @@ async function main(): Promise<void> {
     for (const duplicate of result.duplicates.slice(0, 10)) {
       console.log(`  ${duplicate.key} on ${duplicate.sheets.join(' and ')}`);
     }
+  }
+
+  // Overrides bypass the header rules by design, so what they did is stated
+  // plainly rather than left to be inferred from the per-sheet mapping above.
+  if (hasOverrides(parseOverrides(args.map))) {
+    const applied = result.sheets.flatMap((sheet) =>
+      sheet.overridden.map((field) => {
+        const index = sheet.columns[field]!;
+        return `  ${sheet.sheetName.padEnd(22)} ${field.padEnd(24)} ${columnLetter(index).padEnd(3)} "${sheet.labels[index - 1] ?? '(no label)'}"`;
+      }),
+    );
+    console.log(`\n--map overrode ${applied.length} column(s), bypassing the header rules:`);
+    for (const line of applied) console.log(line);
+    if (applied.length === 0) console.log('  (none reached a sheet that was loaded)');
   }
 
   const providers = new Set(result.rows.map((row) => row.odsCode));

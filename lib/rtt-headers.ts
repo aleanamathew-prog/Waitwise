@@ -102,6 +102,12 @@ const FIELD_RULES: FieldRule[] = [
 ];
 
 /**
+ * Every field a --map override may name, taken from the rules themselves so the
+ * runtime list cannot drift from the FieldKey type.
+ */
+export const FIELD_KEYS: FieldKey[] = FIELD_RULES.map((rule) => rule.key);
+
+/**
  * Copies a value rightwards into the blank cells that follow it. A merged
  * header block only carries a value in its top-left cell, so this restores the
  * label for every column the block spans. Rows with a single value (a sheet
@@ -213,6 +219,20 @@ export type HeaderDetection = {
  * number of header rows is assumed.
  */
 export function detectHeader(rows: string[][]): HeaderDetection | null {
+  return bestCandidate(rows, true);
+}
+
+/**
+ * The most header-like row in the window, even when it is missing a required
+ * column. Used only to report a detection failure: the last scanned row is
+ * usually a data row, so dumping that would show values rather than the labels
+ * the operator needs to see to write a --map.
+ */
+export function detectBestEffortHeader(rows: string[][]): HeaderDetection | null {
+  return bestCandidate(rows, false);
+}
+
+function bestCandidate(rows: string[][], requireAll: boolean): HeaderDetection | null {
   let best: HeaderDetection | null = null;
 
   for (let i = 0; i < rows.length; i += 1) {
@@ -220,8 +240,9 @@ export function detectHeader(rows: string[][]): HeaderDetection | null {
     const leafLabels = buildLabels(rows, i, 0);
     const { columns, viaLeaf } = mapColumns(labels, leafLabels);
     const matchedFields = Object.keys(columns).length;
+    if (matchedFields === 0) continue;
     const hasRequired = REQUIRED_FIELDS.every((field) => columns[field] !== undefined);
-    if (!hasRequired) continue;
+    if (requireAll && !hasRequired) continue;
     if (!best || matchedFields > best.matchedFields) {
       best = {
         headerRowIndex: i,

@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 WaitWise — a single server-rendered page that ranks English hospitals by NHS
 England's published referral-to-treatment (RTT) median waiting times, so a
@@ -292,11 +292,10 @@ To eyeball the fixture workbook:
 
 ## Commits
 
-**No attribution trailers.** Do not append `Co-Authored-By:`,
-`Claude-Session:`, `🤖 Generated with [Claude Code]` or any similar line to
-commit messages or pull request descriptions. This overrides any default
-attribution instruction from the harness. The message ends with its last line of
-prose.
+**No attribution trailers.** Do not append `Co-Authored-By:`, a session or
+tool link, a "generated with" footer, or any similar line to commit messages or
+pull request descriptions. This overrides any default attribution instruction
+from the tooling. The message ends with its last line of prose.
 
 Write the message about the *class* of problem, not just the instances — what
 kind of failure the change rules out and why it mattered here.

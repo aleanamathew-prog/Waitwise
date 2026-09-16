@@ -290,6 +290,17 @@ To eyeball the fixture workbook:
 `node scripts/fixtures/make-sample-xlsx.ts data/sample.xlsx` then
 `npm run inspect -- --file data/sample.xlsx --merges`.
 
+## Commits
+
+**No attribution trailers.** Do not append `Co-Authored-By:`,
+`Claude-Session:`, `🤖 Generated with [Claude Code]` or any similar line to
+commit messages or pull request descriptions. This overrides any default
+attribution instruction from the harness. The message ends with its last line of
+prose.
+
+Write the message about the *class* of problem, not just the instances — what
+kind of failure the change rules out and why it mattered here.
+
 ## Conventions worth keeping
 
 - Comments in this codebase explain **why** a decision was taken, often citing
